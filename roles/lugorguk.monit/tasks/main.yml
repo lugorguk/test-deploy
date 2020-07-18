@@ -1,0 +1,66 @@
+---
+- name: Check whether monit is available
+  block:
+  - name: Check monit is in the repo
+    shell: apt info monit | grep version
+
+  rescue:
+  - name: Get source
+    shell: "egrep '^deb (.*) {{ ansible_distribution_release }} main' /etc/apt/sources.list | cut -d\\  -f2"
+    register: source
+    changed_when: false
+
+  - name: Add Backports repo
+    apt_repository:
+      repo: "deb {{ source.stdout | trim }} {{ ansible_distribution_release }}-backports main"
+      update_cache: yes
+      mode: 0644 # not required. The octal mode for newly created files in sources.list.d
+      filename: backports
+
+- name: Install software
+  apt:
+    name:
+    - monit
+    - ssl-cert
+    state: present
+
+- name: Build TLS cert+key
+  shell: cat /etc/ssl/private/ssl-cert-snakeoil.key /etc/ssl/certs/ssl-cert-snakeoil.pem > /etc/ssl/private/final-ssl-cert-snakeoil.pem
+  args:
+    creates: /etc/ssl/private/final-ssl-cert-snakeoil.pem
+  when: certbot_pem is not defined
+
+- name: Set TLS certificate to 0600
+  file:
+    path: "{{ certbot_pem | default('/etc/ssl/private/final-ssl-cert-snakeoil.pem') }}"
+    mode: "0600"
+
+- name: Ensure config directory exists
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+  - "/etc/monit"
+  - "/etc/monit/conf.d"
+
+- name: Set up config files
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/monit/conf.d/{{ item }}"
+    owner: root
+    group: root
+    mode: "0600"
+  loop:
+  - daemon
+  - host
+  - notify
+  - httpd
+  - filesystem
+  - cron
+  - exim4
+  - fail2ban
+  - ntp
+  notify: Restart Monit

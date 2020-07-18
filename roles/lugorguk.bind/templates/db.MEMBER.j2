@@ -1,0 +1,30 @@
+{%- set this_mx = this.mail_hosting | default(this.mail_redirects | default('')) -%}
+{%- if this.dns_name is defined and this.dns_name != "" -%}
+; #############################################
+; GROUP RECORD FOR {{ this.dns_name }}
+; Contact: {{ this.contact | default('none') }} <{{ this.contact_address | default('none@none') }}>
+{%- if this.notes is defined %}
+; Notes: {{ this.notes }}
+{%- endif %}
+; #############################################
+{% if this.web_hosting is defined and this.web_hosting is string -%}
+{{ this.dns_name }} IN CNAME {{ this.web_hosting }}
+{% elif this.web_hosting is defined and this.web_hosting.via is defined and this.web_hosting.via is string -%}
+{{ this.dns_name }} IN CNAME {{ this.web_hosting.via }} ; redirecting...
+{% endif -%}{# if this.web_hosting is defined #}
+{% if this_mx is defined and this_mx is string and this_mx != '' -%}
+{{ this.dns_name }} IN MX 10 {{ this_mx }}.
+{% elif this_mx is defined and this_mx != '' and this_mx is not mapping and this_mx is not number -%}
+{% set ns = namespace() -%}
+{% set ns.mx = 10 -%}
+{% for mx in this_mx -%}
+{{ this.dns_name }} IN MX {{ ns.mx }} {{ mx }}.
+{% set ns.mx = ns.mx + 10 -%}
+{% endfor -%}
+{% endif -%}{# if mx is defined #}
+{% if this.extra_dns_records is defined -%}
+{% for record in this.extra_dns_records -%}
+{{ record.target | default(this.dns_name) }} IN {{ record.type | default('TXT') }} {{ record.record | default(this.dns_name) }}
+{% endfor -%}{# record in this.extra_dns_records #}
+{% endif -%}{# if this.extra_dns_records is defined #}
+{% endif -%}{# if this.dns_name is defined #}

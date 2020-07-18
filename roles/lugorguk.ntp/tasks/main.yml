@@ -1,0 +1,10 @@
+---
+- name: Install NTP
+  apt:
+    name:
+    - ntp
+    - tzdata
+
+- name: Set Timezone
+  timezone:
+    name: Europe/London

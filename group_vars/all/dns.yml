@@ -1,0 +1,69 @@
+---
+bind_forwarders:
+- 192.0.2.53
+bind_slaves:
+- a.example.org.
+
+primary_suffix: test.lug.org.uk
+secondary_suffix: test.glug.org.uk
+all_suffixes:
+- test.lug.org.uk
+- test.glug.org.uk
+- test.lugs.org.uk
+- test.glugs.org.uk
+- test.uklugs.org
+default_mx:
+- "mail-in.{{ primary_suffix }}"
+- "mail-in.{{ secondary_suffix }}"
+default_spf: "v=spf1 a mx -all"
+default_rp: "andy.strugglers.net. {% for name in all_suffixes | default([]) %}{{ name }}. {% endfor %}"
+
+services:
+  ns1:
+    hosts:
+    - "{{ hosts.root }}"
+  "@":
+    ns: |
+      [
+        "ns1.lug.org.uk.",
+        "ns1.glug.org.uk.",
+        {% for slave in bind_slaves | default([]) %}
+          "{{ slave }}",
+        {% endfor %}
+      ]
+    hosts:
+    - "{{ hosts.test01 }}"
+    - "{{ hosts.test02 }}"
+    mx: "{{ default_mx }}"
+    rp: "{{ default_rp }}"
+    txt:
+    - "UK Linux User Groups"
+    - "google-site-verification=vbowpMgzwoyxTcO_k24S1vNJKHRABaLCh6Si7iq3F8U"
+    - "google-site-verification=lX0O2hYl_fTlbYTmfZpqt1lsiMnxAb7y7HwgLffYIZs"
+    - "google-site-verification=TARrHMztTzZ2e7ROLDcEMw0T8G7GNeI_McfNIWpunk0"
+    - "{{ default_spf }}"
+  "_psl":
+    txt: "https://github.com/publicsuffix/list/pull/514"
+  www:
+    cname: "{{ primary_suffix }}."
+  lists:
+    cname: "{{ primary_suffix }}."
+  down:
+    cname: "vm.sprig.gs."
+  mail: # Legacy
+    cname: "{{ primary_suffix }}."
+  irc: # Legacy
+    cname: "irc.blitzed.org."
+  penguin: # Legacy
+    cname: "irc.blitzed.org."
+
+hosts:
+  root:
+    v4: "192.0.2.10"
+    v6: "2002::192:0:2:10"
+  test01:
+    v4: "192.0.2.11"
+    v6: "2002::192:0:2:11"
+  test02:
+    v4: "192.0.2.12"
+    v6: "2002::192:0:2:12"

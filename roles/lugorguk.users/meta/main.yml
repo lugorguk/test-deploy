@@ -1,0 +1,7 @@
+galaxy_info:
+  author: Jon Spriggs
+  description: Set up a group of Admin Users on a server
+  license: CC-0
+  min_ansible_version: 2.4
+  galaxy_tags: []
+dependencies: []

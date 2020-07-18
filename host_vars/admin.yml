@@ -1,0 +1,7 @@
+---
+disks:
+  sda1:
+    monit_space_max_use: 99
+    monit_inode_max_use: 95
+
+monit_high_memory_use_response: exec /bin/sh -c "ps xauww | mail -s 'High memory usage on {{ansible_fqdn}}.' {{ admin_mail_account | default ('root@' ~ ansible_fqdn) }}"

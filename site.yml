@@ -1,6 +1,53 @@
 ---
-- hosts: localhost
-  gather_facts: false
+- name: Site Setup
+  hosts: all
+  become: true
   tasks:
-  - debug:
-      msg: "Hello World"
+  - name: Setup Software Config
+    include_role:
+      name: lugorguk.software_config
+
+  - name: Setup MOTD Banners
+    include_role:
+      name: lugorguk.motd
+
+  - name: Setup NTP
+    include_role:
+      name: lugorguk.ntp
+
+  - name: Setup Exim
+    include_role:
+      name: lugorguk.exim
+
+  - name: Setup Users
+    include_role:
+      name: lugorguk.users
+      # TODO: lugorguk.users should also create non-admins
+
+  - name: Setup Monit
+    include_role:
+      name: lugorguk.monit
+
+- name: Admin Server Setup
+  hosts: admin
+  become: true
+  tasks:
+  - name: Install and configure Bind
+    include_role:
+      name: lugorguk.bind
+
+- name: Web Server Setup
+  hosts: test01,test02
+  become: true
+  tasks:
+  - name: Setup Docker
+    include_role:
+      name: lugorguk.docker
+
+  # - name: Install Ceph
+  #   include_role:
+  #     name: lugorguk.ceph
+  
+  # TODO: Create Mailman
+  # TODO: Create web hosting
+  # TODO: Consider setting up Gitlab + Gitlab Pages

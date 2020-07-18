@@ -1,0 +1,7 @@
+galaxy_info:
+  author: Jon Spriggs
+  description: Set up Bind for lug.org.uk
+  license: CC-0
+  min_ansible_version: 2.4
+  galaxy_tags: []
+dependencies: []

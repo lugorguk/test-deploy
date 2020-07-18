@@ -1,0 +1,7 @@
+check system {{ ansible_fqdn }}
+    if loadavg (1min) > {{ monit_high_load_1min | default(4) }} for 5 times within 15 cycles then {{ monit_high_load_1min_response | default('alert') }}
+    if loadavg (5min) > {{ monit_high_load_5min | default(2) }} for 5 times within 15 cycles then {{ monit_high_load_5min_response | default('alert') }}
+    if memory usage > {{ monit_high_memory_use | default(80) }}% for 5 times within 15 cycles then {{ monit_high_memory_use_response | default('alert') }}
+    if cpu usage (user) > {{ monit_high_cpu_user | default(70) }}% for 5 times within 15 cycles then {{ monit_high_cpu_user_response | default('alert') }}
+    if cpu usage (system) > {{ monit_high_cpu_system | default(30) }}% for 5 times within 15 cycles then {{ monit_high_cpu_system_response | default('alert') }}
+    if cpu usage (wait) > {{ monit_high_cpu_wait | default(20) }}% for 5 times within 15 cycles then {{ monit_high_cpu_wait_response | default('alert') }}

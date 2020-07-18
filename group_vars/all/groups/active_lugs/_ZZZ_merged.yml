@@ -1,0 +1,81 @@
+lugs: |-
+  {
+    {%- for lug in lugs_a | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_b | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_c | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_d | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_e | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_f | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_g | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_h | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_i | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_j | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_k | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_l | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_m | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_n | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_o | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_p | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_q | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_r | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_s | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_t | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_u | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_v | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_w | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_x | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_y | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+    {%- for lug in lugs_z | default({}) | dict2items -%}
+      '{{ lug.key }}': {{ lug.value }},
+    {%- endfor -%}
+  }

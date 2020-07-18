@@ -1,0 +1,7 @@
+---
+- template:
+    dest: /tmp/bind
+    src: db.DNSNAME.j2
+    owner: root
+    group: root
+    mode: "0644"

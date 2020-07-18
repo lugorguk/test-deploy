@@ -1,0 +1,149 @@
+---
+- name: Check SSH keys
+  assert:
+    quiet: true
+    that:
+    - item.value.ssh_key_source is not defined or item.value.ssh_key_source is string
+    - item.value.ssh_keys is not defined or item.value.ssh_keys is string or item.value.ssh_keys is not mapping or item.value.ssh_keys is iterable
+    fail_msg: |-
+      {% if item.value.ssh_key_source is defined and item.value.ssh_key_source is not string %}* SSH Key Source is defined but is not a string and should be.
+      {% endif %}{% if item.value.ssh_keys is defined and item.value.ssh_keys is mapping %}* SSH Keys is defined and is a dict, which is not handled. It should either be a list or a string.{% endif %}
+  loop: "{{ admins | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Set up sudoers
+  copy:
+    content: "%lugadmins ALL=(ALL) ALL"
+    dest: /etc/sudoers.d/lugadmins
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Set up lugadmins group
+  group:
+    name: lugadmins
+    system: yes
+
+- name: Check User Status
+  getent:
+    database: passwd
+    key: "{{ item.key }}"
+    fail_key: false
+  register: checkusers
+  loop: "{{ admins | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Create Breakglass (on demand)
+  set_fact:
+    breakglass: |-
+      {%- if breakglass|default('') != '' -%}
+        {{ breakglass }}
+      {%- else -%}
+        {{ ansible_date_time.epoch|hash('md5')|truncate(8, true, '') + '_LugOrgUK' }}
+      {%- endif -%}
+    set_breakglass: true
+  loop: |
+      {% set ns = namespace() %}
+      {% set ns.vars = {'check': True } %}
+      [
+        {% for user in checkusers.results %}
+          {% if ns.vars.check %}
+            {%- if user.ansible_facts is not defined or 
+                   user.ansible_facts.getent_passwd is not defined or 
+                   user.ansible_facts.getent_passwd[user.item.key] is not defined or
+                   user.ansible_facts.getent_passwd[user.item.key]|type_debug == 'NoneType' -%}
+              {% set ns.vars = {'check': false } %}True
+            {%- elif user.item.value.force_password_reset|default(false)|bool -%}
+              {% set ns.vars = {'check': false } %}True
+            {%- endif -%}
+          {%- endif -%}
+        {% endfor %}
+      ]
+
+- name: Report breakglass
+  when: set_breakglass | default(false)
+  debug:
+    msg: "{{ breakglass | default('') }}"
+
+- name: Create or Update Admins
+  user:
+    name: "{{ item.key }}"
+    uid: "{{ item.value.uid | default(omit) }}"
+    comment: "{{ item.value.name | default(omit) }}"
+    createhome: yes
+    groups: lugadmins
+    shell: /bin/bash
+    home: "/{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item.key }}"
+    password: "{{ item.value.password | default(breakglass | default('Password')) | password_hash('sha512') }}"
+    update_password: "{% if item.value.force_password_reset | default(false) | bool %}always{% else %}on_create{% endif %}"
+  loop: "{{ admins | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: create_users
+
+- name: Check whether the passwords have been reset to the breakglass
+  getent:
+    database: shadow
+    split: ':'
+  register: shadow
+
+# This command thanks to https://askubuntu.com/a/30118/212
+- name: Set expiry on breakglass set passwords
+  command: "chage -d 0 {{ item }}"
+  vars:
+    regex: '\$6\$(\S+)\$(\S+)'
+  loop: |-
+    {% set ns = namespace() %}
+    [
+      {% for item in shadow.ansible_facts.getent_shadow | dict2items %}
+        {% if admins[item.key] is defined %}
+          {% set ns.value = 0 %}
+          {% for value in item.value %}
+            {% set ns.value = ns.value + 1 %}
+            {% if value | regex_search(regex) %}
+              {% set salt = (value | regex_replace(regex, "\\1")) %}
+              {% if value == (admins[item.key].password | default(breakglass | default('Password')) | password_hash('sha512', salt)) %}
+                "{{ item.key }}",
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+    ]
+  loop_control:
+    label: "{{ item }}"
+
+- name: Create SSH Key Directory
+  when: item.value.ssh_keys | default('') != '' or item.value.ssh_key_source | default('') != ''
+  file:
+    name: "/{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item.key }}/.ssh"
+    state: directory
+    owner: "{{ item.key }}"
+    group: nogroup
+    mode: 0700
+  loop: "{{ admins | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Create Authorized Keys File
+  when: item.value.ssh_keys | default('') != '' or item.value.ssh_key_source | default('') != ''
+  copy:
+    dest: "/{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item.key }}/.ssh/authorized_keys"
+    content: |
+        {%- if item.value.ssh_key_source|default('') != '' %}
+        {{ lookup('url', item.value.ssh_key_source, split_lines=false) }}
+        {% endif %}{% if item.value.ssh_keys|default('') is string -%}
+        {{ item.value.ssh_keys|default('') }}
+        {% else %}
+        {% for key in item.value.ssh_keys %}
+        {{ key }}
+        {% endfor %}
+        {% endif %}
+    owner: "{{ item.key }}"
+    group: nogroup
+    mode: 0600
+  loop: "{{ admins | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
