@@ -1,11 +1,12 @@
-{% for partition in ansible_mounts | sort %}
+{% for partition in ansible_mounts %}
+{% if partition.fstype | default('fuse') != 'fuse' %}
 {% set short_name = partition.device | regex_replace('/dev/', '') %}
 {% set mount = (disks | default({}) )[short_name] | default({}) %}
-{% if mount.skip | default(false) == true %}
-{% else %}
+{% if mount.skip | default(false) == false %}
 check device {{ mount.label | default('Disk-'~short_name) }} with path {{ partition.device }}
     if SPACE usage > {{ mount.monit_space_max_use | default(monit_space_max_use | default('90')) }}% for 5 times within 15 cycles then alert
     if INODE usage > {{ mount.monit_inode_max_use | default(monit_inode_max_use | default('90')) }}% for 5 times within 15 cycles then alert
     if changed fsflags then alert
+{% endif %}
 {% endif %}
 {% endfor %}

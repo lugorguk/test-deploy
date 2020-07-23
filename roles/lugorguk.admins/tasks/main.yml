@@ -72,7 +72,7 @@
     name: "{{ item.key }}"
     uid: "{{ item.value.uid | default(omit) }}"
     comment: "{{ item.value.name | default(omit) }}"
-    createhome: yes
+    createhome: no
     groups: lugadmins
     shell: /bin/bash
     home: "/{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item.key }}"
@@ -82,6 +82,44 @@
   loop_control:
     label: "{{ item.key }}"
   register: create_users
+
+- name: Mount all fstab
+  shell: mount -a
+  args:
+    warn: false
+  register: mounting
+
+- debug: var=mounting
+
+- name: Create Admin Home Directories
+  file:
+    path: "/{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item.key }}"
+    owner: "{{ item.key }}"
+    group: "{{ item.key }}"
+    state: directory
+  loop: "{{ admins | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Copy skel to home path
+  shell: |
+    cp -Rf /etc/skel/ /{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item.key }}/
+    chown {{ item.key }}:{{ item.key }} /{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item.key }}/
+  args:
+    creates: "/{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item.key }}/.profile"
+  loop: |
+    [
+      {% for user in checkusers.results %}
+        {%- if user.ansible_facts is not defined or 
+                user.ansible_facts.getent_passwd is not defined or 
+                user.ansible_facts.getent_passwd[user.item.key] is not defined or
+                user.ansible_facts.getent_passwd[user.item.key]|type_debug == 'NoneType' -%}
+          {"key": "{{ user.item.key }}", "value": "{{ user.item.value }}"},
+        {%- endif -%}
+      {% endfor %}
+    ]
+  loop_control:
+    label: "{{ item.key }}"
 
 - name: Check whether the passwords have been reset to the breakglass
   getent:

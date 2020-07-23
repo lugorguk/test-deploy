@@ -1,0 +1,91 @@
+---
+- name: Create Syncthing User
+  user:
+    name: syncthing
+    create_home: yes # not required. Unless set to C(no), a home directory will be made for the user when the account is created or if the home directory does not exist.,Changed from C(createhome) to C(create_home) in version 2.5.
+    home: /home/.syncthing/
+    system: yes
+
+- name: Install SyncThing
+  apt:
+    name: syncthing
+    state: present
+
+- name: Setup Syncthing
+  become_user: syncthing
+  shell: syncthing -generate /home/.syncthing/.config/syncthing
+  args:
+    creates: /home/.syncthing/.config/syncthing/config.xml
+  
+- name: Get Syncthing DeviceID
+  become_user: syncthing
+  shell: syncthing -device-id
+  register: syncthing_device_id
+  changed_when: false
+
+- name: Report DeviceID
+  debug:
+    msg: "Syncthing Device ID is: {{ syncthing_device_id.stdout }}"
+
+- name: Check admin home directory structure
+  stat:
+    path: "/{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item.key }}"
+  register: adminpaths
+  changed_when: false
+  failed_when: false
+  loop: "{{ admins | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Make admin home directory structure
+  when: not item.stat.exists
+  file:
+    path: "/{{ item.item.value.homepath | default(adminhome | default('home')) }}/{{ item.item.key }}"
+    state: directory
+    group: root # This will become the "user" later on :)
+    owner: root # This will become the "user" later on :)
+    mode: 0700
+  loop: "{{ adminpaths.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+
+- name: Make syncthing directory structure
+  file:
+    path: "/home/.syncthing/{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item.key }}"
+    state: directory
+    group: syncthing
+    owner: syncthing
+    mode: 0700
+  loop: "{{ admins | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Reload mount data
+  setup:
+    filter: ansible_mounts
+
+- name: Mount .st folders into /home
+  mount:
+    state: present
+    path: "/{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item }}"
+    src: "/home/.syncthing/{{ item.value.homepath | default(adminhome | default('home')) }}/{{ item }}"
+    fstype: fuse.bindfs
+    opts: mirror={{ item }},perms=0644:ugd+x
+  loop: |
+    [
+      {% for item in (admins | dict2items) %}
+        {% set ns = namespace() %}
+        {% set ns.mounted = false %}
+        {% for mount in ansible_mounts %}
+          {% if mount.mount == '/'~item.value.homepath | default(adminhome | default('home'))~'/'~item.key %}
+            {% set ns.mounted = true %}
+          {% endif %}
+        {% endfor %}
+        {% if ns.mounted == false %}"{{ item.key }}",{% endif %}
+      {% endfor %}
+    ]
+  loop_control:
+    label: "{{ item }}"
+
+# TODO: Build config file
+

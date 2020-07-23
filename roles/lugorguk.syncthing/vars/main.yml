@@ -1,0 +1,2 @@
+---
+admins: "{{ ( users | default({}) ).admins | default({}) }}"
